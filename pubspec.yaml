@@ -34,6 +34,8 @@ dependencies:
   provider: ^6.1.1
   shared_preferences: ^2.2.2
   intl: ^0.18.1
+  image_picker: ^1.0.7
+  path_provider: ^2.1.2
   # braze_plugin: ^8.0.0  # Add when ready for Braze
 
 dev_dependencies:

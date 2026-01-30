@@ -78,6 +78,10 @@ class User {
     this.notificationsEnabled = true,
     this.emailOffersEnabled = true,
     this.smsOffersEnabled = false,
+    this.profilePhotoFile,
+    this.profilePhotoScale,
+    this.profilePhotoOffsetX,
+    this.profilePhotoOffsetY,
     List<SavedAddress>? savedAddresses,
     List<PaymentMethod>? paymentMethods,
   })  : savedAddresses = savedAddresses ?? [],
@@ -92,6 +96,14 @@ class User {
   bool notificationsEnabled;
   bool emailOffersEnabled;
   bool smsOffersEnabled;
+  /// Filename for profile photo stored in app documents directory.
+  String? profilePhotoFile;
+  /// Scale used in circular frame (e.g. 1.0 = fit).
+  double? profilePhotoScale;
+  /// Offset X for positioning in circular frame.
+  double? profilePhotoOffsetX;
+  /// Offset Y for positioning in circular frame.
+  double? profilePhotoOffsetY;
   List<SavedAddress> savedAddresses;
   List<PaymentMethod> paymentMethods;
 
@@ -108,6 +120,10 @@ class User {
         'notificationsEnabled': notificationsEnabled,
         'emailOffersEnabled': emailOffersEnabled,
         'smsOffersEnabled': smsOffersEnabled,
+        'profilePhotoFile': profilePhotoFile,
+        'profilePhotoScale': profilePhotoScale,
+        'profilePhotoOffsetX': profilePhotoOffsetX,
+        'profilePhotoOffsetY': profilePhotoOffsetY,
         'savedAddresses': savedAddresses.map((e) => e.toJson()).toList(),
         'paymentMethods': paymentMethods.map((e) => e.toJson()).toList(),
       };
@@ -122,6 +138,10 @@ class User {
         notificationsEnabled: json['notificationsEnabled'] as bool? ?? true,
         emailOffersEnabled: json['emailOffersEnabled'] as bool? ?? true,
         smsOffersEnabled: json['smsOffersEnabled'] as bool? ?? false,
+        profilePhotoFile: json['profilePhotoFile'] as String?,
+        profilePhotoScale: (json['profilePhotoScale'] as num?)?.toDouble(),
+        profilePhotoOffsetX: (json['profilePhotoOffsetX'] as num?)?.toDouble(),
+        profilePhotoOffsetY: (json['profilePhotoOffsetY'] as num?)?.toDouble(),
         savedAddresses: (json['savedAddresses'] as List<dynamic>?)
                 ?.map((e) => SavedAddress.fromJson(e as Map<String, dynamic>))
                 .toList() ??

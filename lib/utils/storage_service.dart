@@ -10,7 +10,7 @@ import '../models/user.dart';
 /// Persists app state with SharedPreferences.
 class StorageService {
   StorageService._();
-  static late SharedPreferences _prefs;
+  static SharedPreferences? _prefs;
   static bool _initialized = false;
 
   static const _keyCart = 'cart';
@@ -22,12 +22,20 @@ class StorageService {
 
   static Future<void> init() async {
     if (_initialized) return;
-    _prefs = await SharedPreferences.getInstance();
+    try {
+      _prefs = await SharedPreferences.getInstance();
+    } catch (_) {
+      _prefs = null;
+    }
     _initialized = true;
   }
 
+  static bool get isReady => _prefs != null;
+
   static List<CartItem> getCart() {
-    final json = _prefs.getString(_keyCart);
+    final prefs = _prefs;
+    if (prefs == null) return [];
+    final json = prefs.getString(_keyCart);
     if (json == null) return [];
     try {
       final list = jsonDecode(json) as List<dynamic>;
@@ -40,20 +48,28 @@ class StorageService {
   }
 
   static Future<void> saveCart(List<CartItem> items) async {
+    final prefs = _prefs;
+    if (prefs == null) return;
     final list = items.map((e) => e.toJson()).toList();
-    await _prefs.setString(_keyCart, jsonEncode(list));
+    await prefs.setString(_keyCart, jsonEncode(list));
   }
 
   static int getLoyaltyPoints() {
-    return _prefs.getInt(_keyLoyaltyPoints) ?? 7;
+    final prefs = _prefs;
+    if (prefs == null) return 0;
+    return prefs.getInt(_keyLoyaltyPoints) ?? 0;
   }
 
   static Future<void> saveLoyaltyPoints(int points) async {
-    await _prefs.setInt(_keyLoyaltyPoints, points);
+    final prefs = _prefs;
+    if (prefs == null) return;
+    await prefs.setInt(_keyLoyaltyPoints, points);
   }
 
   static User? getUser() {
-    final json = _prefs.getString(_keyUser);
+    final prefs = _prefs;
+    if (prefs == null) return null;
+    final json = prefs.getString(_keyUser);
     if (json == null) return null;
     try {
       return User.fromJson(jsonDecode(json) as Map<String, dynamic>);
@@ -63,11 +79,15 @@ class StorageService {
   }
 
   static Future<void> saveUser(User user) async {
-    await _prefs.setString(_keyUser, jsonEncode(user.toJson()));
+    final prefs = _prefs;
+    if (prefs == null) return;
+    await prefs.setString(_keyUser, jsonEncode(user.toJson()));
   }
 
   static Store? getSelectedStore() {
-    final json = _prefs.getString(_keySelectedStore);
+    final prefs = _prefs;
+    if (prefs == null) return null;
+    final json = prefs.getString(_keySelectedStore);
     if (json == null) return null;
     try {
       return Store.fromJson(jsonDecode(json) as Map<String, dynamic>);
@@ -77,19 +97,27 @@ class StorageService {
   }
 
   static Future<void> saveSelectedStore(Store store) async {
-    await _prefs.setString(_keySelectedStore, jsonEncode(store.toJson()));
+    final prefs = _prefs;
+    if (prefs == null) return;
+    await prefs.setString(_keySelectedStore, jsonEncode(store.toJson()));
   }
 
   static String getPickupTime() {
-    return _prefs.getString(_keyPickupTime) ?? 'asap';
+    final prefs = _prefs;
+    if (prefs == null) return 'asap';
+    return prefs.getString(_keyPickupTime) ?? 'asap';
   }
 
   static Future<void> savePickupTime(String value) async {
-    await _prefs.setString(_keyPickupTime, value);
+    final prefs = _prefs;
+    if (prefs == null) return;
+    await prefs.setString(_keyPickupTime, value);
   }
 
   static List<Order> getOrderHistory() {
-    final json = _prefs.getString(_keyOrderHistory);
+    final prefs = _prefs;
+    if (prefs == null) return [];
+    final json = prefs.getString(_keyOrderHistory);
     if (json == null) return [];
     try {
       final list = jsonDecode(json) as List<dynamic>;
@@ -102,7 +130,9 @@ class StorageService {
   }
 
   static Future<void> saveOrderHistory(List<Order> orders) async {
+    final prefs = _prefs;
+    if (prefs == null) return;
     final list = orders.map((e) => e.toJson()).toList();
-    await _prefs.setString(_keyOrderHistory, jsonEncode(list));
+    await prefs.setString(_keyOrderHistory, jsonEncode(list));
   }
 }

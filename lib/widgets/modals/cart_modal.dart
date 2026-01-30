@@ -2,6 +2,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../data/menu_data.dart';
+import '../../models/cart_item.dart';
 import '../../models/order.dart';
 import '../../providers/app_provider.dart';
 import '../../providers/cart_provider.dart';
@@ -9,7 +11,7 @@ import '../../utils/constants.dart';
 import '../../utils/theme.dart';
 import '../cart_item_card.dart';
 
-class CartModal extends StatelessWidget {
+class CartModal extends StatefulWidget {
   const CartModal({
     super.key,
     required this.onClose,
@@ -18,6 +20,20 @@ class CartModal extends StatelessWidget {
 
   final VoidCallback onClose;
   final void Function(Order order) onPlaceOrder;
+
+  @override
+  State<CartModal> createState() => _CartModalState();
+}
+
+class _CartModalState extends State<CartModal> {
+  final _couponController = TextEditingController();
+  String? _couponError;
+
+  @override
+  void dispose() {
+    _couponController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,6 +60,8 @@ class CartModal extends StatelessWidget {
                     children: [
                       _buildCartInfo(context),
                       const SizedBox(height: 16),
+                      _buildCouponSection(context),
+                      const SizedBox(height: 16),
                       ...cart.items.map((e) => Padding(
                             padding: const EdgeInsets.only(bottom: 12),
                             child: CartItemCard(cartItem: e),
@@ -61,11 +79,18 @@ class CartModal extends StatelessWidget {
           Consumer2<CartProvider, AppProvider>(
             builder: (context, cart, app, _) {
               if (cart.items.isEmpty) return const SizedBox.shrink();
-              final rewardDiscount = app.redeemReward && app.canRedeemReward
-                  ? AppConstants.rewardDiscountAmount
+              final hasRedeemedItemInCart = cart.items.any((i) => i.isRedeemedReward);
+              final rewardDiscount = hasRedeemedItemInCart
+                  ? 0.0
+                  : (app.redeemReward && app.canRedeemReward
+                      ? (AppConstants.rewardDiscountAmount.clamp(0.0, cart.subtotal))
+                      : 0.0);
+              final couponDiscount = app.appliedCoupon == AppConstants.doubleSmashCouponCode
+                  ? cart.subtotal * AppConstants.doubleSmashDiscountPercent
                   : 0.0;
-              final total = cart.subtotal + cart.tax - rewardDiscount;
-              return _buildPlaceOrderBar(context, total, cart, app);
+              var total = cart.subtotal + cart.tax - rewardDiscount - couponDiscount;
+              if (total < 0) total = 0;
+              return _buildPlaceOrderBar(context, total, cart, app, couponDiscount);
             },
           ),
         ],
@@ -103,7 +128,7 @@ class CartModal extends StatelessWidget {
           ),
           IconButton(
             icon: const Icon(Icons.close),
-            onPressed: onClose,
+            onPressed: widget.onClose,
           ),
         ],
       ),
@@ -213,9 +238,99 @@ class CartModal extends StatelessWidget {
     );
   }
 
-  Widget _buildRewardBanner(BuildContext context) {
+  Widget _buildCouponSection(BuildContext context) {
     return Consumer<AppProvider>(
       builder: (context, app, _) {
+        final isApplied = app.appliedCoupon == AppConstants.doubleSmashCouponCode;
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.gray100,
+            borderRadius: BorderRadius.circular(AppTheme.radiusCard),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Promo code',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                  color: AppColors.gray700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              if (isApplied)
+                Row(
+                  children: [
+                    const Icon(Icons.check_circle, color: AppColors.success, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${AppConstants.doubleSmashCouponCode} — 20% off applied',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.success,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const Spacer(),
+                    TextButton(
+                      onPressed: () => app.clearCoupon(),
+                      child: const Text('Remove'),
+                    ),
+                  ],
+                )
+              else
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _couponController,
+                        decoration: InputDecoration(
+                          hintText: 'e.g. DOUBLESMASH',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          errorText: _couponError,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        ),
+                        onChanged: (_) => setState(() => _couponError = null),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      onPressed: () {
+                        final code = _couponController.text.trim();
+                        if (code.isEmpty) {
+                          setState(() => _couponError = 'Enter a code');
+                          return;
+                        }
+                        if (code.toUpperCase() == AppConstants.doubleSmashCouponCode) {
+                          app.applyCoupon(code);
+                          setState(() => _couponError = null);
+                        } else {
+                          setState(() => _couponError = 'Invalid code');
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      ),
+                      child: const Text('Apply'),
+                    ),
+                  ],
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildRewardBanner(BuildContext context) {
+    return Consumer2<CartProvider, AppProvider>(
+      builder: (context, cart, app, _) {
+        final hasRedeemedItemInCart = cart.items.any((i) => i.isRedeemedReward);
         return Container(
           margin: const EdgeInsets.only(bottom: 16),
           padding: const EdgeInsets.all(16),
@@ -239,9 +354,11 @@ class CartModal extends StatelessWidget {
                         fontSize: 16,
                       ),
                     ),
-                    const Text(
-                      'Redeem 10 points for \$10 off',
-                      style: TextStyle(
+                    Text(
+                      hasRedeemedItemInCart
+                          ? 'Free item in cart (1 reward used)'
+                          : '${app.availableRewards} reward(s) available — use one for a free item',
+                      style: const TextStyle(
                         color: AppColors.gray700,
                         fontSize: 14,
                       ),
@@ -249,11 +366,12 @@ class CartModal extends StatelessWidget {
                   ],
                 ),
               ),
-              CupertinoSwitch(
-                value: app.redeemReward,
-                onChanged: (v) => app.setRedeemReward(v),
-                activeColor: AppColors.primary,
-              ),
+              if (!hasRedeemedItemInCart)
+                CupertinoSwitch(
+                  value: app.redeemReward,
+                  onChanged: (v) => app.setRedeemReward(v),
+                  activeColor: AppColors.primary,
+                ),
             ],
           ),
         );
@@ -264,11 +382,18 @@ class CartModal extends StatelessWidget {
   Widget _buildOrderSummary(BuildContext context) {
     return Consumer2<CartProvider, AppProvider>(
       builder: (context, cart, app, _) {
-        final rewardDiscount = app.redeemReward && app.canRedeemReward
-            ? AppConstants.rewardDiscountAmount
+        final hasRedeemedItemInCart = cart.items.any((i) => i.isRedeemedReward);
+        final rewardDiscount = hasRedeemedItemInCart
+            ? 0.0
+            : (app.redeemReward && app.canRedeemReward
+                ? (AppConstants.rewardDiscountAmount.clamp(0.0, cart.subtotal))
+                : 0.0);
+        final couponDiscount = app.appliedCoupon == AppConstants.doubleSmashCouponCode
+            ? cart.subtotal * AppConstants.doubleSmashDiscountPercent
             : 0.0;
-        final total = cart.subtotal + cart.tax - rewardDiscount;
-        final earnsPoint = total >= AppConstants.qualifyingAmountForPoint;
+        var total = cart.subtotal + cart.tax - rewardDiscount - couponDiscount;
+        if (total < 0) total = 0;
+        final earnsPoint = total >= AppConstants.qualifyingAmountForPoint && !hasRedeemedItemInCart;
 
         return Container(
           padding: const EdgeInsets.all(16),
@@ -286,6 +411,12 @@ class CartModal extends StatelessWidget {
                   '-\$${rewardDiscount.toStringAsFixed(2)}',
                   valueColor: AppColors.success,
                 ),
+              if (couponDiscount > 0)
+                _summaryRow(
+                  'Promo (20% off)',
+                  '-\$${couponDiscount.toStringAsFixed(2)}',
+                  valueColor: AppColors.success,
+                ),
               const Divider(height: 24),
               _summaryRow(
                 'Total',
@@ -300,7 +431,7 @@ class CartModal extends StatelessWidget {
                     Text('⭐', style: TextStyle(fontSize: 16)),
                     SizedBox(width: 4),
                     Text(
-                      "You'll earn 1 loyalty point with this order!",
+                      "You'll earn 1 Bite with this order!",
                       style: TextStyle(
                         color: AppColors.primary,
                         fontSize: 14,
@@ -355,6 +486,7 @@ class CartModal extends StatelessWidget {
     double total,
     CartProvider cart,
     AppProvider app,
+    double couponDiscount,
   ) {
     return Container(
       padding: EdgeInsets.only(
@@ -374,17 +506,26 @@ class CartModal extends StatelessWidget {
         ],
       ),
       child: SafeArea(
-        child: SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: () {
-              final rewardDiscount = app.redeemReward && app.canRedeemReward
-                  ? AppConstants.rewardDiscountAmount
-                  : 0.0;
-              final orderTotal = cart.subtotal + cart.tax - rewardDiscount;
-              final pointsEarned = orderTotal >= AppConstants.qualifyingAmountForPoint
-                  ? AppConstants.pointsPerQualifyingOrder
-                  : 0;
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+              final hasRedeemedItemInCart = cart.items.any((i) => i.isRedeemedReward);
+              final rewardDiscount = hasRedeemedItemInCart
+                  ? 0.0
+                  : (app.redeemReward && app.canRedeemReward
+                      ? (AppConstants.rewardDiscountAmount.clamp(0.0, cart.subtotal))
+                      : 0.0);
+              var orderTotal = cart.subtotal + cart.tax - rewardDiscount - couponDiscount;
+              if (orderTotal < 0) orderTotal = 0;
+              final usedReward = app.redeemReward || hasRedeemedItemInCart;
+              // Only count as purchase if $10+ spent; free/redeemed orders do not earn a Bite
+              final pointsEarned = usedReward
+                  ? 0
+                  : (orderTotal >= AppConstants.qualifyingAmountForPoint ? 1 : 0);
               final order = Order(
                 id: AppProvider.generateOrderId(),
                 store: app.selectedStore!,
@@ -394,22 +535,75 @@ class CartModal extends StatelessWidget {
                 tax: cart.tax,
                 total: orderTotal,
                 rewardDiscount: rewardDiscount,
+                couponDiscount: couponDiscount,
                 pointsEarned: pointsEarned,
                 createdAt: DateTime.now(),
               );
-              app.completeOrder(order, pointsEarned, app.redeemReward);
+              app.completeOrder(order, pointsEarned, usedReward);
               cart.clear();
               app.setRedeemReward(false);
-              onPlaceOrder(order);
+              app.clearCoupon();
+              widget.onPlaceOrder(order);
             },
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
               backgroundColor: AppColors.primary,
             ),
-            child: Text('Place Order • \$${total.toStringAsFixed(2)}'),
+            child: Text(
+              total <= 0
+                  ? 'Place Order • \$0.00'
+                  : 'Place Order • \$${total.toStringAsFixed(2)}',
+            ),
           ),
+        ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: TextButton(
+                onPressed: () => _testOneClickOrder(context, cart, app),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.gray500,
+                ),
+                child: const Text('Test: 1-Click Order', style: TextStyle(fontSize: 12)),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
+
+  /// Testing only: places a qualifying order ($10+) to quickly test loyalty/Bites flow.
+  void _testOneClickOrder(BuildContext context, CartProvider cart, AppProvider app) {
+    final item = MenuData.getItemById('b2')!; // Bacon Blitz $10.99
+    final cartItem = CartItem(
+      id: 'test_${DateTime.now().millisecondsSinceEpoch}',
+      item: item,
+      customizations: [],
+      quantity: 1,
+      isRedeemedReward: false,
+    );
+    final subtotal = 10.99;
+    final tax = subtotal * AppConstants.taxRate;
+    final total = subtotal + tax;
+    final order = Order(
+      id: AppProvider.generateOrderId(),
+      store: app.selectedStore ?? MenuData.defaultStore,
+      pickupTime: app.pickupTime,
+      items: [cartItem],
+      subtotal: subtotal,
+      tax: tax,
+      total: total,
+      rewardDiscount: 0,
+      couponDiscount: 0,
+      pointsEarned: 1,
+      createdAt: DateTime.now(),
+    );
+    app.completeOrder(order, 1, false);
+    cart.clear();
+    app.setRedeemReward(false);
+    app.clearCoupon();
+    widget.onPlaceOrder(order);
+  }
 }
+

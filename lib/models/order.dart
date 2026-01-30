@@ -12,6 +12,7 @@ class Order {
     required this.tax,
     required this.total,
     this.rewardDiscount = 0,
+    this.couponDiscount = 0,
     this.pointsEarned = 0,
     required this.createdAt,
   });
@@ -24,6 +25,7 @@ class Order {
   final double tax;
   final double total;
   final double rewardDiscount;
+  final double couponDiscount;
   final int pointsEarned;
   final DateTime createdAt;
 
@@ -36,6 +38,7 @@ class Order {
         'tax': tax,
         'total': total,
         'rewardDiscount': rewardDiscount,
+        'couponDiscount': couponDiscount,
         'pointsEarned': pointsEarned,
         'createdAt': createdAt.toIso8601String(),
       };
@@ -51,6 +54,7 @@ class Order {
         tax: (json['tax'] as num).toDouble(),
         total: (json['total'] as num).toDouble(),
         rewardDiscount: (json['rewardDiscount'] as num?)?.toDouble() ?? 0,
+        couponDiscount: (json['couponDiscount'] as num?)?.toDouble() ?? 0,
         pointsEarned: json['pointsEarned'] as int? ?? 0,
         createdAt: DateTime.parse(json['createdAt'] as String),
       );

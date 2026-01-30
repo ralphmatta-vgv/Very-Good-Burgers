@@ -8,17 +8,20 @@ class CartItem {
     required this.item,
     List<Customization>? customizations,
     this.quantity = 1,
+    this.isRedeemedReward = false,
   }) : customizations = customizations ?? [];
 
   final String id;
   final MenuItem item;
   final List<Customization> customizations;
   int quantity;
+  /// When true, item was added via Rewards redemption — show $0 and do not apply extra reward discount.
+  final bool isRedeemedReward;
 
   double get customizationTotal =>
       customizations.fold(0.0, (sum, c) => sum + c.price);
 
-  double get unitPrice => item.price + customizationTotal;
+  double get unitPrice => isRedeemedReward ? 0 : (item.price + customizationTotal);
 
   double get totalPrice => unitPrice * quantity;
 
@@ -27,6 +30,7 @@ class CartItem {
         'item': item.toJson(),
         'customizations': customizations.map((e) => e.toJson()).toList(),
         'quantity': quantity,
+        'isRedeemedReward': isRedeemedReward,
       };
 
   factory CartItem.fromJson(Map<String, dynamic> json) {
@@ -40,6 +44,7 @@ class CartItem {
       item: item,
       customizations: customizations,
       quantity: json['quantity'] as int? ?? 1,
+      isRedeemedReward: json['isRedeemedReward'] as bool? ?? false,
     );
   }
 }

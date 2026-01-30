@@ -84,7 +84,7 @@ class OrderConfirmModal extends StatelessWidget {
                 _row('Pickup Time', AppConstants.pickupTimeLabel(order.pickupTime)),
                 _row('Total', '\$${order.total.toStringAsFixed(2)}'),
                 if (order.pointsEarned > 0)
-                  _row('Points Earned', '+${order.pointsEarned} ⭐'),
+                  _row('Bites Earned', '+${order.pointsEarned} ⭐'),
               ],
             ),
           ),

@@ -9,6 +9,10 @@ abstract class AppConstants {
   static const int pointsForReward = 10;
   static const double rewardDiscountAmount = 10.0;
 
+  /// Double Smash Deal promo: 20% off when applied at checkout
+  static const String doubleSmashCouponCode = 'DOUBLESMASH';
+  static const double doubleSmashDiscountPercent = 0.20;
+
   static const List<String> pickupTimeOptions = [
     'asap',
     '30min',

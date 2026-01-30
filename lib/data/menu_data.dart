@@ -5,6 +5,7 @@ import 'package:very_good_burgers/models/store.dart';
 /// Static menu and store data.
 abstract class MenuData {
   static const List<MenuItem> burgers = [
+    MenuItem(id: 'b_double_smash', name: 'Double Smash Deal', description: 'Double smashed patties, American cheese, pickles, onions, VGB sauce — 20% off combo this weekend!', price: 9.99, emoji: '🍔', calories: 720, category: 'Burgers'),
     MenuItem(id: 'b1', name: 'Classic Smash', description: 'Double smashed patties, American cheese, pickles, onions, VGB sauce', price: 8.99, emoji: '🍔', calories: 650, category: 'Burgers'),
     MenuItem(id: 'b2', name: 'Bacon Blitz', description: 'Crispy bacon, cheddar, caramelized onions, BBQ aioli', price: 10.99, emoji: '🥓', calories: 820, category: 'Burgers'),
     MenuItem(id: 'b3', name: 'Mushroom Melt', description: 'Sautéed mushrooms, Swiss cheese, garlic herb butter', price: 10.49, emoji: '🍄', calories: 710, category: 'Burgers'),
@@ -124,9 +125,9 @@ abstract class MenuData {
   // --- Rewards (redeemable items) ---
 
   static const List<Map<String, dynamic>> redeemableRewards = [
-    {'name': 'Free Classic Fries', 'points': 10, 'emoji': '🍟'},
-    {'name': 'Free Fountain Drink', 'points': 10, 'emoji': '🥤'},
-    {'name': 'Free Cookie Sandwich', 'points': 10, 'emoji': '🍪'},
-    {'name': 'Free Classic Smash', 'points': 10, 'emoji': '🍔'},
+    {'name': 'Free Classic Fries', 'points': 10, 'emoji': '🍟', 'itemId': 's1'},
+    {'name': 'Free Fountain Drink', 'points': 10, 'emoji': '🥤', 'itemId': 'd1'},
+    {'name': 'Free Cookie Sandwich', 'points': 10, 'emoji': '🍪', 'itemId': 'ds3'},
+    {'name': 'Free Classic Smash', 'points': 10, 'emoji': '🍔', 'itemId': 'b1'},
   ];
 }

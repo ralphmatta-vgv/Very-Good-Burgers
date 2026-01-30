@@ -77,7 +77,7 @@ class _PunchCircle extends StatelessWidget {
   Widget build(BuildContext context) {
     Color bgColor;
     Widget? child;
-    if (isTenth) {
+    if (isTenth && !useBurgerIcon) {
       bgColor = isFilled ? AppColors.gold : AppColors.gray200;
       child = Text(
         isFilled ? '🎁' : (showNumber ? '$index' : ''),

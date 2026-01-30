@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 
+import '../../providers/app_provider.dart';
+
 import '../../models/customization.dart';
 import '../../models/menu_item.dart';
 import '../../data/menu_data.dart';
@@ -15,11 +17,13 @@ class ItemDetailModal extends StatefulWidget {
     required this.item,
     required this.onAdded,
     required this.onClose,
+    this.redeemReward = false,
   });
 
   final MenuItem item;
   final VoidCallback onAdded;
   final VoidCallback onClose;
+  final bool redeemReward;
 
   @override
   State<ItemDetailModal> createState() => _ItemDetailModalState();
@@ -37,7 +41,7 @@ class _ItemDetailModalState extends State<ItemDetailModal> {
           .where((c) => _selectedCustomizationIds.contains(c.id))
           .fold(0.0, (s, c) => s + c.price);
 
-  double get _unitPrice => widget.item.price + _customizationTotal;
+  double get _unitPrice => widget.redeemReward ? 0 : (widget.item.price + _customizationTotal);
   double get _totalPrice => _unitPrice * _quantity;
 
   @override
@@ -158,7 +162,7 @@ class _ItemDetailModalState extends State<ItemDetailModal> {
           ),
           const SizedBox(height: 8),
           Text(
-            '${widget.item.calories} cal',
+            widget.redeemReward ? 'Free with 10 Bites' : '${widget.item.calories} cal',
             style: const TextStyle(
               color: AppColors.gray500,
               fontSize: 14,
@@ -304,22 +308,40 @@ class _ItemDetailModalState extends State<ItemDetailModal> {
                     widget.item,
                     customizations,
                     _quantity,
+                    isRedeemedReward: widget.redeemReward,
                   );
+              if (widget.redeemReward) {
+                context.read<AppProvider>().setRedeemReward(true);
+              }
               widget.onAdded();
             },
             style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
               backgroundColor: AppColors.primary,
+              minimumSize: const Size(double.infinity, 56),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('Add to Cart'),
+                Flexible(
+                  child: Text(
+                    widget.redeemReward ? 'Add as reward' : 'Add to Cart',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 16),
                 Text(
-                  '\$${_totalPrice.toStringAsFixed(2)}',
+                  widget.redeemReward ? '\$0.00' : '\$${_totalPrice.toStringAsFixed(2)}',
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                    fontSize: 18,
+                    color: Colors.white,
                   ),
                 ),
               ],

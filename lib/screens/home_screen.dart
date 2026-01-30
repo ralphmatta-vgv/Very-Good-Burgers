@@ -4,17 +4,32 @@ import 'package:provider/provider.dart';
 import '../data/menu_data.dart';
 import '../models/menu_item.dart';
 import '../providers/app_provider.dart';
+import '../providers/cart_provider.dart';
 import '../providers/user_provider.dart';
 import '../utils/theme.dart';
-import '../services/braze_service.dart';
 import '../widgets/promo_card.dart';
 import '../widgets/punch_card.dart';
-import '../widgets/menu_item_card.dart';
 import '../widgets/modals/item_detail_modal.dart';
-import '../widgets/modals/store_modal.dart';
 
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({
+    super.key,
+    this.onOrderNow,
+    this.onTapOrder,
+    this.onTapRewards,
+    this.onTapHistory,
+    this.onOpenOrderHistory,
+    this.onShowCart,
+    this.onShowStoreModal,
+  });
+
+  final VoidCallback? onOrderNow;
+  final VoidCallback? onTapOrder;
+  final VoidCallback? onTapRewards;
+  final VoidCallback? onTapHistory;
+  final VoidCallback? onOpenOrderHistory;
+  final VoidCallback? onShowCart;
+  final VoidCallback? onShowStoreModal;
 
   @override
   Widget build(BuildContext context) {
@@ -22,86 +37,123 @@ class HomeScreen extends StatelessWidget {
       backgroundColor: Colors.transparent,
       body: CustomScrollView(
         slivers: [
+          // Top bar: welcome + store left, cart right (no logo)
           SliverToBoxAdapter(
             child: Container(
               width: double.infinity,
-              decoration: BoxDecoration(
-                color: AppColors.white,
-                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.gray300.withValues(alpha: 0.4),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              padding: const EdgeInsets.fromLTRB(24, 20, 24, 22),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Consumer<UserProvider>(
-                    builder: (context, userProv, _) {
-                      return Text(
-                        'Welcome back, ${userProv.user?.firstName ?? 'Guest'}! 👋',
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.navy,
-                          letterSpacing: -0.3,
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  Consumer<AppProvider>(
-                    builder: (context, app, _) {
-                      final store = app.selectedStore;
-                      if (store == null) return const SizedBox.shrink();
-                      return GestureDetector(
-                        onTap: () => _showStoreModal(context),
-                        child: Row(
-                          children: [
-                            const Text('📍', style: TextStyle(fontSize: 18)),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    store.name,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 14,
-                                      color: AppColors.navy,
+              color: AppColors.white,
+              padding: const EdgeInsets.fromLTRB(20, 16, 16, 20),
+              child: SafeArea(
+                bottom: false,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Consumer<UserProvider>(
+                            builder: (context, userProv, _) {
+                              return Text(
+                                'Welcome back, ${userProv.user?.firstName ?? 'Guest'}! 👋',
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.navy,
+                                  letterSpacing: -0.3,
+                                ),
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 8),
+                          Consumer<AppProvider>(
+                            builder: (context, app, _) {
+                              final store = app.selectedStore;
+                              if (store == null) return const SizedBox.shrink();
+                              return GestureDetector(
+                                onTap: onShowStoreModal,
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text('📍', style: TextStyle(fontSize: 16)),
+                                    const SizedBox(width: 6),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text(
+                                                store.name,
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 13,
+                                                  color: AppColors.navy,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              const Text(
+                                                'Change',
+                                                style: TextStyle(
+                                                  color: AppColors.primary,
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 13,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            store.address,
+                                            style: const TextStyle(
+                                              color: AppColors.gray500,
+                                              fontSize: 11,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                  Text(
-                                    store.address,
-                                    style: const TextStyle(
-                                      color: AppColors.gray500,
-                                      fontSize: 12,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (onShowCart != null)
+                      Consumer<CartProvider>(
+                        builder: (context, cart, _) {
+                          return IconButton(
+                            icon: Badge(
+                              isLabelVisible: cart.itemCount > 0,
+                              label: Text(
+                                '${cart.itemCount}',
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.white,
+                                ),
+                              ),
+                              backgroundColor: AppColors.primary,
+                              child: const Icon(
+                                Icons.shopping_cart_outlined,
+                                color: AppColors.navy,
+                                size: 24,
                               ),
                             ),
-                            const Text(
-                              'Change',
-                              style: TextStyle(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14,
-                              ),
+                            onPressed: onShowCart,
+                            style: IconButton.styleFrom(
+                              backgroundColor: AppColors.gray100,
                             ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ],
+                          );
+                        },
+                      ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -113,10 +165,7 @@ class HomeScreen extends StatelessWidget {
                 title: 'Double Smash Deal',
                 description: 'Get any combo for 20% off this weekend only!',
                 ctaLabel: 'Order Now',
-                onTap: () {
-                  BrazeService.logCustomEvent('tab_viewed', {'tab_name': 'order'});
-                  // Could navigate to Order tab - handled by parent
-                },
+                onTap: onOrderNow ?? () {},
               ),
             ),
           ),
@@ -143,15 +192,15 @@ class HomeScreen extends StatelessWidget {
                 childAspectRatio: 0.85,
               ),
               delegate: SliverChildListDelegate([
-                _QuickAction(icon: '🍔', label: 'Order', onTap: () {}),
-                _QuickAction(icon: '🎁', label: 'Rewards', onTap: () {}),
-                _QuickAction(icon: '📍', label: 'Locations', onTap: () {}),
-                _QuickAction(icon: '📜', label: 'History', onTap: () {}),
+                _QuickAction(icon: '🍔', label: 'Order', onTap: onTapOrder ?? () {}),
+                _QuickAction(icon: '🎁', label: 'Rewards', onTap: onTapRewards ?? () {}),
+                _QuickAction(icon: '📍', label: 'Locations', onTap: onShowStoreModal ?? () {}),
+                _QuickAction(icon: '📜', label: 'History', onTap: onOpenOrderHistory ?? () {}),
               ]),
             ),
           ),
           SliverToBoxAdapter(
-            child: _LoyaltyPreviewCard(),
+            child: _LoyaltyPreviewCard(onTapRewards: onTapRewards),
           ),
           SliverToBoxAdapter(
             child: Padding(
@@ -209,24 +258,27 @@ class HomeScreen extends StatelessWidget {
         expand: false,
         builder: (_, scrollController) => ItemDetailModal(
           item: item,
-          onAdded: () => Navigator.of(ctx).pop(),
+          onAdded: () {
+            Navigator.of(ctx).pop();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Item added to cart'),
+                behavior: SnackBarBehavior.floating,
+                backgroundColor: AppColors.primary,
+                margin: EdgeInsets.only(
+                  left: 24,
+                  right: 24,
+                  bottom: MediaQuery.of(context).size.height - 140,
+                ),
+              ),
+            );
+          },
           onClose: () => Navigator.of(ctx).pop(),
         ),
       ),
     );
   }
 
-  void _showStoreModal(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => StoreModal(
-        onClose: () => Navigator.of(ctx).pop(),
-        onStoreSelected: () => Navigator.of(ctx).pop(),
-      ),
-    );
-  }
 }
 
 class _PopularItemChip extends StatelessWidget {
@@ -321,13 +373,17 @@ class _QuickAction extends StatelessWidget {
 }
 
 class _LoyaltyPreviewCard extends StatelessWidget {
+  const _LoyaltyPreviewCard({this.onTapRewards});
+
+  final VoidCallback? onTapRewards;
+
   @override
   Widget build(BuildContext context) {
     return Consumer<AppProvider>(
       builder: (context, app, _) {
         final points = app.loyaltyPoints;
         final filled = points.clamp(0, 10);
-        final rewardReady = filled >= 10;
+        final rewardReady = app.availableRewards >= 1;
         return Container(
           margin: const EdgeInsets.fromLTRB(20, 16, 20, 0),
           padding: const EdgeInsets.all(20),
@@ -357,7 +413,7 @@ class _LoyaltyPreviewCard extends StatelessWidget {
                     ),
                   ),
                   TextButton(
-                    onPressed: () {},
+                    onPressed: onTapRewards ?? () {},
                     child: const Text('View All'),
                   ),
                 ],
@@ -370,19 +426,29 @@ class _LoyaltyPreviewCard extends StatelessWidget {
                     color: AppColors.gold.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Row(
+                  child: Row(
                     children: [
-                      Text('🎉', style: TextStyle(fontSize: 24)),
-                      SizedBox(width: 8),
+                      const Text('🎉', style: TextStyle(fontSize: 24)),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           'Free item ready to redeem!',
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
                             fontSize: 14,
+                            color: AppColors.navy,
                           ),
                         ),
                       ),
+                      if (onTapRewards != null)
+                        TextButton(
+                          onPressed: onTapRewards,
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppColors.primary,
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                          ),
+                          child: const Text('Redeem'),
+                        ),
                     ],
                   ),
                 ),

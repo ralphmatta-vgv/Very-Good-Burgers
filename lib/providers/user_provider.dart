@@ -66,6 +66,19 @@ class UserProvider with ChangeNotifier {
       _user!.birthday = updates['birthday'] as String;
       fields.add('birthday');
     }
+    if (updates.containsKey('profilePhotoFile')) {
+      _user!.profilePhotoFile = updates['profilePhotoFile'] as String?;
+      fields.add('profilePhotoFile');
+    }
+    if (updates.containsKey('profilePhotoScale')) {
+      _user!.profilePhotoScale = updates['profilePhotoScale'] as double?;
+    }
+    if (updates.containsKey('profilePhotoOffsetX')) {
+      _user!.profilePhotoOffsetX = updates['profilePhotoOffsetX'] as double?;
+    }
+    if (updates.containsKey('profilePhotoOffsetY')) {
+      _user!.profilePhotoOffsetY = updates['profilePhotoOffsetY'] as double?;
+    }
     StorageService.saveUser(_user!);
     for (final k in ['firstName', 'last_name', 'email', 'phone', 'birthday']) {
       if (updates.containsKey(k)) {
@@ -73,6 +86,21 @@ class UserProvider with ChangeNotifier {
       }
     }
     BrazeService.logCustomEvent('profile_updated', {'updated_fields': fields});
+    notifyListeners();
+  }
+
+  void setPrimaryPaymentMethod(String paymentMethodId) {
+    if (_user == null) return;
+    _user!.paymentMethods = _user!.paymentMethods
+        .map((pm) => PaymentMethod(
+              id: pm.id,
+              brand: pm.brand,
+              last4: pm.last4,
+              isDefault: pm.id == paymentMethodId,
+            ))
+        .toList();
+    StorageService.saveUser(_user!);
+    BrazeService.logCustomEvent('payment_method_primary_changed', {'id': paymentMethodId});
     notifyListeners();
   }
 

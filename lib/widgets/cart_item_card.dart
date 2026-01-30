@@ -57,7 +57,9 @@ class CartItemCard extends StatelessWidget {
                     ],
                     const SizedBox(height: 4),
                     Text(
-                      '\$${cartItem.totalPrice.toStringAsFixed(2)}',
+                      cartItem.isRedeemedReward
+                          ? '\$0.00 (free reward)'
+                          : '\$${cartItem.totalPrice.toStringAsFixed(2)}',
                       style: const TextStyle(
                         color: AppColors.primary,
                         fontWeight: FontWeight.bold,

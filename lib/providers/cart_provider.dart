@@ -31,14 +31,16 @@ class CartProvider with ChangeNotifier {
   void addToCart(
     MenuItem item,
     List<Customization> customizations,
-    int quantity,
-  ) {
+    int quantity, {
+    bool isRedeemedReward = false,
+  }) {
     final id = _generateCartItemId();
     final cartItem = CartItem(
       id: id,
       item: item,
       customizations: customizations,
       quantity: quantity,
+      isRedeemedReward: isRedeemedReward,
     );
     _items.add(cartItem);
     _persist();
