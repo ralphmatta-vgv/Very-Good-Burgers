@@ -36,7 +36,11 @@ dependencies:
   intl: ^0.18.1
   image_picker: ^1.0.7
   path_provider: ^2.1.2
-  # braze_plugin: ^8.0.0  # Add when ready for Braze
+  braze_plugin: ^16.0.0
+  cached_network_image: ^3.4.1
+  permission_handler: ^11.3.1
+  http: ^1.2.2
+  uuid: ^4.5.1
 
 dev_dependencies:
   flutter_test:

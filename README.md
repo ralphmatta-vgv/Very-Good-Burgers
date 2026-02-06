@@ -26,6 +26,8 @@ A **Flutter iOS app** for a quick-service restaurant (QSR): mobile ordering, loy
 
 **You need:** a Mac with [Flutter](https://docs.flutter.dev/get-started/install/macos) and Xcode installed.
 
+**Recommendation:** Use **profile mode** (`flutter run --profile`) for better performance and behavior closer to release; use plain `flutter run` only when you need the debugger.
+
 1. **Clone the repo** (or download and unzip):
    ```bash
    git clone https://github.com/ralphmatta-vgv/Very-Good-Burgers.git
@@ -39,12 +41,12 @@ A **Flutter iOS app** for a quick-service restaurant (QSR): mobile ordering, loy
 
 3. **Run on iOS Simulator:**
    ```bash
-   flutter run
+   flutter run --profile
    ```
    (Pick the iPhone simulator when prompted.)
 
 4. **Run on your iPhone:**  
-   Connect the phone, enable Developer Mode in **Settings → Privacy & Security**, then run `flutter run` and select your device. You may need to trust the developer certificate in **Settings → General → Device Management** the first time.
+   Connect the phone, enable Developer Mode in **Settings → Privacy & Security**, then run `flutter run --profile` and select your device. You may need to trust the developer certificate in **Settings → General → Device Management** the first time.
 
 ---
 

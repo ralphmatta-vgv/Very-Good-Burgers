@@ -12,9 +12,10 @@ import 'screens/order_screen.dart';
 import 'screens/order_history_screen.dart';
 import 'screens/loyalty_screen.dart';
 import 'screens/profile_screen.dart';
-import 'services/braze_service.dart';
+import 'services/braze_tracking.dart';
 import 'utils/theme.dart';
 import 'widgets/bottom_nav.dart';
+import 'widgets/braze_in_app_message_handler.dart';
 import 'widgets/modals/cart_modal.dart';
 import 'widgets/modals/order_confirm_modal.dart';
 import 'widgets/modals/store_modal.dart';
@@ -28,7 +29,7 @@ class VeryGoodBurgersApp extends StatelessWidget {
       title: 'Very Good Burgers',
       theme: AppTheme.light,
       debugShowCheckedModeBanner: false,
-      home: const _MainScaffold(),
+      home: const BrazeInAppMessageHandler(child: _MainScaffold()),
     );
   }
 }
@@ -49,7 +50,7 @@ class _MainScaffoldState extends State<_MainScaffold> {
     setState(() => _currentIndex = index);
     final names = ['home', 'order', 'rewards', 'profile'];
     if (index < names.length) {
-      BrazeService.logCustomEvent('tab_viewed', {'tab_name': names[index]});
+      BrazeTracking.trackTabViewed(names[index]);
     }
   }
 
@@ -59,7 +60,7 @@ class _MainScaffoldState extends State<_MainScaffold> {
       _pendingOrderItem = MenuData.getItemById('b_double_smash');
       _currentIndex = NavTab.order.index;
     });
-    BrazeService.logCustomEvent('tab_viewed', {'tab_name': 'order'});
+    BrazeTracking.trackTabViewed('order');
   }
 
   void _clearPendingOrderItem() {
@@ -71,7 +72,7 @@ class _MainScaffoldState extends State<_MainScaffold> {
       _pendingRewardItem = item;
       _currentIndex = NavTab.order.index;
     });
-    BrazeService.logCustomEvent('tab_viewed', {'tab_name': 'order'});
+    BrazeTracking.trackTabViewed('order');
   }
 
   void _clearPendingRewardItem() {

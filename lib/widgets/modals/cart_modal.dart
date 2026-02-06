@@ -512,7 +512,7 @@ class _CartModalState extends State<CartModal> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
+                onPressed: () async {
               final hasRedeemedItemInCart = cart.items.any((i) => i.isRedeemedReward);
               final rewardDiscount = hasRedeemedItemInCart
                   ? 0.0
@@ -539,7 +539,7 @@ class _CartModalState extends State<CartModal> {
                 pointsEarned: pointsEarned,
                 createdAt: DateTime.now(),
               );
-              app.completeOrder(order, pointsEarned, usedReward);
+              await app.completeOrder(order, pointsEarned, usedReward);
               cart.clear();
               app.setRedeemReward(false);
               app.clearCoupon();
@@ -574,7 +574,7 @@ class _CartModalState extends State<CartModal> {
   }
 
   /// Testing only: places a qualifying order ($10+) to quickly test loyalty/Bites flow.
-  void _testOneClickOrder(BuildContext context, CartProvider cart, AppProvider app) {
+  Future<void> _testOneClickOrder(BuildContext context, CartProvider cart, AppProvider app) async {
     final item = MenuData.getItemById('b2')!; // Bacon Blitz $10.99
     final cartItem = CartItem(
       id: 'test_${DateTime.now().millisecondsSinceEpoch}',
@@ -599,7 +599,7 @@ class _CartModalState extends State<CartModal> {
       pointsEarned: 1,
       createdAt: DateTime.now(),
     );
-    app.completeOrder(order, 1, false);
+    await app.completeOrder(order, 1, false);
     cart.clear();
     app.setRedeemReward(false);
     app.clearCoupon();

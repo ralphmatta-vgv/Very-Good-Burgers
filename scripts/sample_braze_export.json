@@ -1,0 +1,43 @@
+{
+  "external_id": "user_1",
+  "orders": [
+    {
+      "id": "order_hist_1",
+      "store": { "id": "store_1", "name": "Downtown" },
+      "pickupTime": "asap",
+      "items": [
+        {
+          "id": "cart_1",
+          "item": {
+            "id": "burger_classic",
+            "name": "Classic Burger",
+            "category": "Burgers",
+            "price": 9.99
+          },
+          "customizations": [],
+          "quantity": 1,
+          "isRedeemedReward": false
+        },
+        {
+          "id": "cart_2",
+          "item": {
+            "id": "drink_soda",
+            "name": "Soda",
+            "category": "Drinks",
+            "price": 2.49
+          },
+          "customizations": [],
+          "quantity": 2,
+          "isRedeemedReward": false
+        }
+      ],
+      "subtotal": 14.97,
+      "tax": 1.20,
+      "total": 16.17,
+      "rewardDiscount": 0,
+      "couponDiscount": 0,
+      "pointsEarned": 5,
+      "createdAt": "2025-01-15T12:00:00.000Z"
+    }
+  ]
+}

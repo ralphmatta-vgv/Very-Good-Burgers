@@ -3,10 +3,15 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'package:braze_plugin/braze_plugin.dart';
+
 import 'app.dart';
 import 'providers/app_provider.dart';
 import 'providers/cart_provider.dart';
+import 'providers/content_cards_provider.dart';
 import 'providers/user_provider.dart';
+import 'services/braze_service.dart';
+import 'services/braze_tracking.dart';
 import 'utils/storage_service.dart';
 
 void main() async {
@@ -42,11 +47,27 @@ void main() async {
   runZonedGuarded(() async {
     try {
       await StorageService.init();
+
+      // Braze: plugin is inited natively in iOS/Android AppDelegate; we register it for Dart calls.
+      // Register in-app message handler immediately so we don't miss session-start or early triggers.
+      final brazePlugin = BrazePlugin(
+        inAppMessageHandler: (BrazeInAppMessage msg) {
+          BrazeService.onInAppMessageFromNative(msg);
+        },
+      );
+      BrazeService.setPlugin(brazePlugin);
+      BrazeService.setInitialized(true);
+
+      // Set Braze external ID for returning users (from storage). New users get UUID in UserProvider.
+      final user = StorageService.getUser();
+      if (user != null) BrazeTracking.changeUser(user.id);
+
       runApp(
         MultiProvider(
           providers: [
             ChangeNotifierProvider(create: (_) => AppProvider()),
             ChangeNotifierProvider(create: (_) => CartProvider()),
+            ChangeNotifierProvider(create: (_) => ContentCardsProvider()),
             ChangeNotifierProvider(create: (_) => UserProvider()),
           ],
           child: const VeryGoodBurgersApp(),

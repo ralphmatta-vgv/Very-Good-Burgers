@@ -823,7 +823,13 @@ class _ToggleRow extends StatelessWidget {
           title: Text(label),
           trailing: CupertinoSwitch(
             value: enabled,
-            onChanged: (v) => userProv.setNotificationPreference(keyName, v),
+            onChanged: (v) {
+              if (keyName == 'push') {
+                userProv.setPushPreferenceWithPermission(v);
+              } else {
+                userProv.setNotificationPreference(keyName, v);
+              }
+            },
             activeColor: AppColors.primary,
           ),
         );

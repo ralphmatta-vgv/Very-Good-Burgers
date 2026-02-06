@@ -5,7 +5,7 @@ import '../models/store.dart';
 import '../data/menu_data.dart';
 import '../utils/constants.dart';
 import '../utils/storage_service.dart';
-import '../services/braze_service.dart';
+import '../services/braze_tracking.dart';
 
 class AppProvider with ChangeNotifier {
   int _bites = 0; // Progress 0–10 toward next reward; resets to 0 when reaching 10
@@ -58,6 +58,8 @@ class AppProvider with ChangeNotifier {
       _selectedStore = MenuData.defaultStore;
       StorageService.saveSelectedStore(_selectedStore!);
     }
+    // Refresh Braze with current favorite store and other derived attributes on every launch.
+    _sendDerivedAttributes();
   }
 
   /// Earning and redeeming are separate: Bites 0–10 loop; at 10 → +1 reward, Bites→0. Redeeming spends a banked reward.
@@ -82,11 +84,7 @@ class AppProvider with ChangeNotifier {
   void setSelectedStore(Store store) {
     _selectedStore = store;
     StorageService.saveSelectedStore(store);
-    BrazeService.logCustomEvent('store_selected', {
-      'store_id': store.id,
-      'store_name': store.name,
-      'store_distance': store.distance,
-    });
+    BrazeTracking.trackStoreSelected(storeId: store.id, storeName: store.name, storeDistance: store.distance);
     notifyListeners();
   }
 
@@ -101,13 +99,13 @@ class AppProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  void completeOrder(Order order, int pointsEarned, bool rewardRedeemed) {
+  Future<void> completeOrder(Order order, int pointsEarned, bool rewardRedeemed) async {
+    final hadLTOCoupon = _appliedCoupon == AppConstants.doubleSmashCouponCode;
+
     _orderHistory.insert(0, order);
     if (rewardRedeemed && _availableRewards >= 1) {
       _availableRewards -= 1;
-      BrazeService.logCustomEvent('reward_redeemed', {
-        'order_id': order.id,
-      });
+      BrazeTracking.trackRewardRedeemed(orderId: order.id);
     }
     if (pointsEarned >= 1) {
       _bites += pointsEarned;
@@ -116,55 +114,104 @@ class AppProvider with ChangeNotifier {
         _availableRewards += 1;
       }
       _bites = _bites.clamp(0, 10);
-      BrazeService.logCustomEvent('loyalty_point_earned', {
-        'points_earned': pointsEarned,
-        'new_total': _bites,
-        'order_id': order.id,
-        'qualifying_amount': AppConstants.qualifyingAmountForPoint,
-      });
-    }
-    StorageService.saveLoyaltyPoints(_bites);
-    StorageService.saveOrderHistory(_orderHistory);
-    BrazeService.setUserAttribute('loyalty_points', _bites);
-    BrazeService.setUserAttribute('available_rewards', _availableRewards);
-    BrazeService.setUserAttribute('total_orders', _orderHistory.length);
-    BrazeService.setUserAttribute('last_order_date', order.createdAt.toIso8601String());
-
-    for (final item in order.items) {
-      BrazeService.logPurchase(
-        item.item.id,
-        item.totalPrice,
-        'USD',
-        item.quantity,
-        {
-          'product_name': item.item.name,
-          'product_category': item.item.category,
-          'customizations': item.customizations.map((c) => c.name).toList(),
-          'order_id': order.id,
-          'store_id': order.store.id,
-          'store_name': order.store.name,
-        },
+      BrazeTracking.trackLoyaltyPointEarned(
+        pointsEarned: pointsEarned,
+        newTotal: _bites,
+        orderId: order.id,
+        qualifyingAmount: AppConstants.qualifyingAmountForPoint.toDouble(),
       );
     }
+    StorageService.saveLoyaltyPoints(_bites);
+    await StorageService.saveOrderHistory(_orderHistory);
 
-    BrazeService.logCustomEvent('order_completed', {
-      'order_id': order.id,
-      'subtotal': order.subtotal,
-      'tax': order.tax,
-      'total': order.total,
-      'items_count': order.items.fold(0, (s, i) => s + i.quantity),
-      'unique_items': order.items.length,
-      'store_id': order.store.id,
-      'store_name': order.store.name,
-      'pickup_time': order.pickupTime,
-      'reward_redeemed': rewardRedeemed,
-      'reward_discount': order.rewardDiscount,
-      'coupon_discount': order.couponDiscount,
-      'points_earned': pointsEarned,
-      'payment_method': 'card',
-    });
+    BrazeTracking.setLoyaltyAttributes(
+      loyaltyPoints: _bites,
+      availableRewards: _availableRewards,
+      totalOrders: _orderHistory.length,
+      lastOrderDateIso: order.createdAt.toIso8601String(),
+    );
+
+    BrazeTracking.trackPurchases(order);
+
+    final itemsCount = order.items.fold<int>(0, (s, i) => s + i.quantity);
+    BrazeTracking.trackOrderCompleted(
+      orderId: order.id,
+      subtotal: order.subtotal,
+      tax: order.tax,
+      total: order.total,
+      itemsCount: itemsCount,
+      uniqueItems: order.items.length,
+      storeId: order.store.id,
+      storeName: order.store.name,
+      pickupTime: order.pickupTime,
+      rewardRedeemed: rewardRedeemed,
+      rewardDiscount: order.rewardDiscount,
+      couponDiscount: order.couponDiscount,
+      pointsEarned: pointsEarned,
+      paymentMethod: 'card',
+    );
+
+    if (hadLTOCoupon) {
+      BrazeTracking.trackLTOCouponRedeemed();
+    }
+
+    _sendDerivedAttributes();
     _appliedCoupon = null;
     notifyListeners();
+  }
+
+  void _sendDerivedAttributes() {
+    if (_orderHistory.isEmpty) return;
+
+    int totalEarned = 0;
+    int totalRedeemed = 0;
+    int totalCoupons = 0;
+    double sumTotal = 0;
+    final storeCounts = <String, int>{};
+    final itemCounts = <String, int>{};
+
+    for (final order in _orderHistory) {
+      totalEarned += order.pointsEarned;
+      if (order.items.any((i) => i.isRedeemedReward)) totalRedeemed += 1;
+      if (order.couponDiscount > 0) totalCoupons += 1;
+      sumTotal += order.total;
+      storeCounts[order.store.id] = (storeCounts[order.store.id] ?? 0) + 1;
+      for (final line in order.items) {
+        final key = '${line.item.category}:${line.item.name}';
+        itemCounts[key] = (itemCounts[key] ?? 0) + line.quantity;
+      }
+    }
+
+    BrazeTracking.setTotalEarnedRewards(totalEarned);
+    BrazeTracking.setTotalRedeemedRewards(totalRedeemed);
+    BrazeTracking.setTotalCouponsRedeemed(totalCoupons);
+    BrazeTracking.setAverageCartValue(sumTotal / _orderHistory.length);
+
+    if (storeCounts.isNotEmpty) {
+      final favoriteStoreId = storeCounts.entries.reduce((a, b) => a.value >= b.value ? a : b).key;
+      Order? favoriteOrder;
+      for (final o in _orderHistory) {
+        if (o.store.id == favoriteStoreId) {
+          favoriteOrder = o;
+          break;
+        }
+      }
+      final description = favoriteOrder != null
+          ? '${favoriteOrder.store.name} — ${favoriteOrder.store.address}'
+          : favoriteStoreId;
+      BrazeTracking.setFavoriteStoreDescription(description);
+    }
+
+    String? topInCategory(String category) {
+      final filtered = itemCounts.entries.where((e) => e.key.startsWith('$category:'));
+      if (filtered.isEmpty) return null;
+      return filtered.reduce((a, b) => a.value >= b.value ? a : b).key.split(':').last;
+    }
+
+    BrazeTracking.setFavoriteBurger(topInCategory('Burgers'));
+    BrazeTracking.setFavoriteDrink(topInCategory('Drinks'));
+    BrazeTracking.setFavoriteCombo(topInCategory('Combos'));
+    BrazeTracking.setFavoriteDessert(topInCategory('Desserts'));
   }
 
   static String generateOrderId() {

@@ -8,7 +8,7 @@ import '../../models/customization.dart';
 import '../../models/menu_item.dart';
 import '../../data/menu_data.dart';
 import '../../providers/cart_provider.dart';
-import '../../services/braze_service.dart';
+import '../../services/braze_tracking.dart';
 import '../../utils/theme.dart';
 
 class ItemDetailModal extends StatefulWidget {
@@ -47,12 +47,12 @@ class _ItemDetailModalState extends State<ItemDetailModal> {
   @override
   void initState() {
     super.initState();
-    BrazeService.logCustomEvent('product_viewed', {
-      'product_id': widget.item.id,
-      'product_name': widget.item.name,
-      'product_category': widget.item.category,
-      'price': widget.item.price,
-    });
+    BrazeTracking.trackProductViewed(
+      productId: widget.item.id,
+      productName: widget.item.name,
+      productCategory: widget.item.category,
+      price: widget.item.price,
+    );
   }
 
   @override

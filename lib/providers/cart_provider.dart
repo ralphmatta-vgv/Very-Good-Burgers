@@ -5,7 +5,7 @@ import '../models/customization.dart';
 import '../models/menu_item.dart';
 import '../utils/constants.dart';
 import '../utils/storage_service.dart';
-import '../services/braze_service.dart';
+import '../services/braze_tracking.dart';
 
 class CartProvider with ChangeNotifier {
   List<CartItem> _items = [];
@@ -48,16 +48,16 @@ class CartProvider with ChangeNotifier {
     final customizationTotal = customizations.fold(0.0, (s, c) => s + c.price);
     final totalPrice = (item.price + customizationTotal) * quantity;
 
-    BrazeService.logCustomEvent('add_to_cart', {
-      'product_id': item.id,
-      'product_name': item.name,
-      'product_category': item.category,
-      'base_price': item.price,
-      'quantity': quantity,
-      'customizations': customizations.map((c) => c.name).toList(),
-      'customization_total': customizationTotal,
-      'total_price': totalPrice,
-    });
+    BrazeTracking.trackAddToCart(
+      productId: item.id,
+      productName: item.name,
+      productCategory: item.category,
+      basePrice: item.price,
+      quantity: quantity,
+      customizations: customizations.map((c) => c.name).toList(),
+      customizationTotal: customizationTotal,
+      totalPrice: totalPrice,
+    );
 
     notifyListeners();
   }
@@ -70,12 +70,12 @@ class CartProvider with ChangeNotifier {
     } else {
       _items[index].quantity = newQuantity;
       _persist();
-      BrazeService.logCustomEvent('update_cart_quantity', {
-        'product_id': _items[index].item.id,
-        'product_name': _items[index].item.name,
-        'old_quantity': oldQty,
-        'new_quantity': newQuantity,
-      });
+      BrazeTracking.trackUpdateCartQuantity(
+        productId: _items[index].item.id,
+        productName: _items[index].item.name,
+        oldQuantity: oldQty,
+        newQuantity: newQuantity,
+      );
     }
     notifyListeners();
   }
@@ -103,12 +103,12 @@ class CartProvider with ChangeNotifier {
     if (index < 0) return;
     final removed = _items.removeAt(index);
     _persist();
-    BrazeService.logCustomEvent('remove_from_cart', {
-      'product_id': removed.item.id,
-      'product_name': removed.item.name,
-      'quantity': removed.quantity,
-      'total_price': removed.totalPrice,
-    });
+    BrazeTracking.trackRemoveFromCart(
+      productId: removed.item.id,
+      productName: removed.item.name,
+      quantity: removed.quantity,
+      totalPrice: removed.totalPrice,
+    );
     notifyListeners();
   }
 

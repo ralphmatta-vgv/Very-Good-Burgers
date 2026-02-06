@@ -1,0 +1,36 @@
+Type,Name,Description,Properties / Fields,When Triggered,Send to Braze (Y/N),Notes
+User Identity,external_id,User ID for Braze profile merge,Single value: user.id,App init; demo user switch,Y,Review
+Standard Attribute,first_name,User first name,Single value: user.firstName,Profile update; initial load,Y,Review
+Standard Attribute,last_name,User last name,Single value: user.lastName,Profile update; initial load,Y,Review
+Standard Attribute,email,User email,Single value: user.email,Profile update; initial load,Y,Review
+Custom Attribute,loyalty_points,Bites count (0-10),int: _bites,After each order,Y,Review
+Custom Attribute,available_rewards,Banked rewards count,int,After each order,Y,Review
+Custom Attribute,total_orders,Order history length,int,After each order,Y,Review
+Custom Attribute,last_order_date,ISO 8601 date of last order,string,After each order,Y,Review
+Custom Attribute,phone,User phone (optional),string,Profile update,Y,Add if needed
+Custom Attribute,birthday,User birthday (optional),string,Profile update,Y,Add if needed
+Purchase Event,logPurchase (per line item),One event per cart line at order,product_id; price (line total); currency (USD); quantity; product_name; product_category; customizations; order_id; store_id; store_name,Place Order,Y,Review - price is line total
+Custom Event,add_to_cart,Item added to cart,product_id; product_name; product_category; base_price; quantity; customizations; customization_total; total_price,Add to cart,Y,Review
+Custom Event,update_cart_quantity,Quantity changed in cart,product_id; product_name; old_quantity; new_quantity,Change qty in cart,Y,Review
+Custom Event,remove_from_cart,Item removed from cart,product_id; product_name; quantity; total_price,Remove from cart,N,Do not send
+Custom Event,product_viewed,Item detail modal opened,product_id; product_name; product_category; price,Open item detail,N,Do not send
+Custom Event,category_viewed,Menu category selected,category,Select category tab,N,Do not send
+Custom Event,store_selected,Store changed,store_id; store_name; store_distance,Change store,Y,Review
+Custom Event,tab_viewed,Bottom tab switched,tab_name,Switch tab,N,Do not send
+Custom Event,order_completed,Order placed,order_id; subtotal; tax; total; items_count; unique_items; store_id; store_name; pickup_time; reward_redeemed; reward_discount; coupon_discount; points_earned; payment_method,Place Order,Y,Review
+Custom Event,reward_redeemed,Reward redeemed at checkout,order_id,Place order with reward,Y,Review
+Custom Event,loyalty_point_earned,Bite(s) earned from order,points_earned; new_total; order_id; qualifying_amount,Place qualifying order,Y,Review
+Custom Event,profile_updated,Profile field(s) saved,updated_fields (array),Save profile edit,N,Do not send
+Custom Event,payment_method_primary_changed,Primary card set,id (payment method id),Tap set Primary,Y,Review
+Custom Event,notification_preference_changed,Push/email/SMS toggled,type (push|email|sms); enabled,Toggle notification,Y,Review - also map to Braze subscription groups
+Custom Attribute,has_payment,Has payment added,boolean,Payment added,Y,default false until payment added
+Custom Attribute,favorite_store,Most visited store,string,Derived from order history,Y,
+Custom Attribute,favorite_burger,Most ordered burger,string,Derived from order history,Y,
+Custom Attribute,favorite_drink,Most ordered drink,string,Derived from order history,Y,
+Custom Attribute,favorite_combo,Most ordered combo,string,Derived from order history,Y,
+Custom Attribute,favorite_dessert,Most ordered dessert,string,Derived from order history,Y,
+Custom Attribute,total_earned_rewards,Lifetime rewards (Bites) earned,int,After each qualifying order,Y,
+Custom Attribute,total_redeemed_rewards,Lifetime rewards redeemed,int,After each redemption,Y,
+Custom Event,LTO coupon redeemed,User redeems homepage LTO offer,,Tap Order Now on Double Smash Deal; apply at checkout,Y,
+Custom Attribute,total_coupons_redeemed,Lifetime coupon redemption count,int,After each coupon redemption,Y,
+Custom Attribute,average_cart_value,Average order total,double,Updated every order,Y,

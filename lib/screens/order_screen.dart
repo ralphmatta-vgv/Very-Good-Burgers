@@ -5,7 +5,7 @@ import '../data/menu_data.dart';
 import '../models/menu_item.dart';
 import '../providers/app_provider.dart';
 import '../providers/cart_provider.dart';
-import '../services/braze_service.dart';
+import '../services/braze_tracking.dart';
 import '../utils/theme.dart';
 import '../widgets/menu_item_card.dart';
 import '../widgets/modals/item_detail_modal.dart';
@@ -250,7 +250,7 @@ class _OrderScreenState extends State<OrderScreen> {
                             );
                           }
                           setState(() => _selectedCategory = cat);
-                          BrazeService.logCustomEvent('category_viewed', {'category': cat});
+                          BrazeTracking.trackCategoryViewed(cat);
                         },
                         borderRadius: BorderRadius.circular(20),
                         child: Padding(

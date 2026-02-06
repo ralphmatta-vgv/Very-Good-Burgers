@@ -7,6 +7,7 @@ import '../providers/app_provider.dart';
 import '../providers/cart_provider.dart';
 import '../providers/user_provider.dart';
 import '../utils/theme.dart';
+import '../widgets/braze_content_cards_section.dart';
 import '../widgets/promo_card.dart';
 import '../widgets/punch_card.dart';
 import '../widgets/modals/item_detail_modal.dart';
@@ -168,6 +169,9 @@ class HomeScreen extends StatelessWidget {
                 onTap: onOrderNow ?? () {},
               ),
             ),
+          ),
+          SliverToBoxAdapter(
+            child: const BrazeContentCardsSection(),
           ),
           SliverToBoxAdapter(
             child: Padding(

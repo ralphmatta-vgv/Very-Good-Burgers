@@ -1,9 +1,14 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
 import '../models/order.dart';
 import '../providers/app_provider.dart';
 import '../providers/cart_provider.dart';
+import '../utils/storage_service.dart';
 import '../utils/theme.dart';
 
 class OrderHistoryScreen extends StatelessWidget {
@@ -35,6 +40,13 @@ class OrderHistoryScreen extends StatelessWidget {
             fontSize: 18,
           ),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.upload_file_rounded),
+            tooltip: 'Export for Braze historical import',
+            onPressed: () => _exportForBraze(context),
+          ),
+        ],
       ),
       body: Consumer<AppProvider>(
         builder: (context, app, _) {
@@ -109,6 +121,43 @@ class OrderHistoryScreen extends StatelessWidget {
         },
       ),
     );
+  }
+
+  static Future<void> _exportForBraze(BuildContext context) async {
+    final user = StorageService.getUser();
+    final orders = StorageService.getOrderHistory();
+    if (user == null) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No user to export')),
+        );
+      }
+      return;
+    }
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final file = File('${dir.path}/braze_export.json');
+      await file.writeAsString(
+        jsonEncode({
+          'external_id': user.id,
+          'orders': orders.map((o) => o.toJson()).toList(),
+        }),
+      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Exported to ${file.path}'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Export failed: $e'), behavior: SnackBarBehavior.floating),
+        );
+      }
+    }
   }
 
   void _expressReorder(
